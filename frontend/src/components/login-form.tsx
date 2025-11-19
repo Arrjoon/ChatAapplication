@@ -1,20 +1,20 @@
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/shadcdn-ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/shadcdn-ui/card"
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+} from "@/components/shadcdn-ui/field"
+import { Input } from "@/components/shadcdn-ui/input"
 
 export function LoginForm({
   className,

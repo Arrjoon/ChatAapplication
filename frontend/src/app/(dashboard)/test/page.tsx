@@ -1,4 +1,4 @@
-import Parent from '@/components/custom-ui/Parent'
+import Parent from '@/components/ui/Parent'
 import React from 'react'
 
 const Test = () => {
