@@ -190,7 +190,7 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
 
         if not user:
             # Optional: you can silently fail to avoid revealing valid usernames/emails
-            raise serializers.ValidationError("Invalid credentials.")
+            raise serializers.ValidationError({"message": "Invalid credentials."})
         if user.is_locked():
             raise serializers.ValidationError("Account temporarily locked.")
 

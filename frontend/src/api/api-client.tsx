@@ -96,21 +96,21 @@ export class ApiClient {
         - If request is NOT safe (POST/PUT/PATCH/DELETE),
         - Fetch new CSRF token from server
       */
-      if (method && !safeMethods.includes(method)) {
-        try {
-          await this.axiosInstance.get(FETCH_CSRF_TOKEN);
-        } catch (e) {
-          console.error("Failed to fetch CSRF token", e);
-        }
-      }
+      // if (method && !safeMethods.includes(method)) {
+      //   try {
+      //     await this.axiosInstance.get(FETCH_CSRF_TOKEN);
+      //   } catch (e) {
+      //     console.error("Failed to fetch CSRF token", e);
+      //   }
+      // }
 
-      // Add CSRF token to header
-      const csrfToken = getCookie("csrftoken");
+      // // Add CSRF token to header
+      // const csrfToken = getCookie("csrftoken");
 
-      if (csrfToken) {
-        config.headers = config.headers || {};
-        config.headers["X-CSRFToken"] = csrfToken;
-      }
+      // if (csrfToken) {
+      //   config.headers = config.headers || {};
+      //   config.headers["X-CSRFToken"] = csrfToken;
+      // }
 
       return config;
     });
