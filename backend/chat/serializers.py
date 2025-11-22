@@ -38,21 +38,22 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
-    """Serializer for ChatRoom model"""
-    
-    participants = UserSerializer(many=True, read_only=True)
+    participants = serializers.StringRelatedField(many=True)
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
+    participant_ids = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False
+    )
 
     class Meta:
         model = ChatRoom
-        fields = ['id', 'name', 'participants', 'is_group', 'created_at', 
-                  'updated_at', 'last_message', 'unread_count']
+        fields = ['id', 'name', 'participants', 'is_group', 
+                  'created_at', 'updated_at', 'last_message', 
+                  'unread_count', 'participant_ids']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_last_message(self, obj):
-        """Get the last message in the room"""
-        last_msg = obj.get_last_message()
+        last_msg = getattr(obj, 'get_last_message', lambda: None)()
         if last_msg:
             return {
                 'id': last_msg.id,
@@ -63,13 +64,35 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         return None
 
     def get_unread_count(self, obj):
-        """Get count of unread messages for current user"""
         request = self.context.get('request')
         if request and request.user:
-            return obj.messages.exclude(
+            return getattr(obj, 'messages', obj).exclude(
                 read_statuses__user=request.user
             ).exclude(sender=request.user).count()
         return 0
+
+    def create(self, validated_data):
+        participant_ids = validated_data.pop('participant_ids', [])
+        room = ChatRoom.objects.create(**validated_data)
+        request = self.context.get('request')
+        if request and request.user:
+            room.participants.add(request.user)
+        if participant_ids:
+            room.participants.add(*participant_ids)
+        return room
+
+    def update(self, instance, validated_data):
+        participant_ids = validated_data.pop('participant_ids', [])
+        instance.name = validated_data.get('name', instance.name)
+        instance.save()
+        instance.participants.clear()
+        request = self.context.get('request')
+        if request and request.user:
+            instance.participants.add(request.user)
+        if participant_ids:
+            instance.participants.add(*participant_ids)
+        return instance
+
 
 
 class UserStatusSerializer(serializers.ModelSerializer):

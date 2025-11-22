@@ -15,7 +15,8 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     ViewSet for ChatRoom operations
     """
     serializer_class = ChatRoomSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
+    print("ChatRoomViewSet initialized")
 
     def get_queryset(self):
         """
@@ -81,6 +82,25 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(room)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+
+    @action(detail=True, methods=['post'])
+    def update_participants(self, request, pk=None):
+        """
+        Update participants of an existing group
+        """
+        room = self.get_object()
+        
+        if not room.is_group:
+            return Response({"error": "Cannot modify participants of a private chat."}, status=status.HTTP_400_BAD_REQUEST)
+
+        participant_ids = request.data.get('participant_ids', [])
+
+        # Keep the current user in the group
+        room.participants.set([request.user] + participant_ids)
+
+        serializer = self.get_serializer(room)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
