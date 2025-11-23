@@ -71,7 +71,7 @@ class LoginView(TokenObtainPairView):
                 key="access_token",
                 value=access_token,
                 httponly=True,
-                secure=True,  
+                secure=False,  
                 samesite="Lax",
                 max_age=60 * 5,
             )
@@ -79,7 +79,7 @@ class LoginView(TokenObtainPairView):
                 key="refresh_token",
                 value=refresh_token,
                 httponly=True,
-                secure=True,
+                secure=False,
                 samesite="Lax",
                 max_age=60 * 60 * 24 * 7,
             )

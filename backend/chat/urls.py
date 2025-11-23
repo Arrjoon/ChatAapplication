@@ -11,7 +11,7 @@ app_name = 'chat'
 
 urlpatterns = [
     # API endpoints
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
     
     # Template views
     path('room/<int:room_id>/', views.chat_room, name='chat_room'),
