@@ -40,7 +40,17 @@ export const ChatSidebar = () => {
                 </div>
             </div>
             <div>
-                <div className="flex items-center justify-center h-16"> chats </div>
+                <div className="flex items-center justify-center"> chats </div>
+                {/* search bar */}
+                <div className="p-4">
+                    <input 
+                        type="text" 
+                        placeholder="Search chats..." 
+                        className="border border-gray-300 rounded-lg w-full px-3 py-2 focus:outline-none foucs:ring-2 focus:ring-blue-400"
+                    />
+                </div>
+                {/* chat list  */}    
+
                 <div className="flex-col overflow-y-auto h-[calc(100vh-120px)]">
                     {chatRooms.map((room) => (
                     <div key={room.id} className="flex items-center p-4 hover:bg-gray-50 cursor-pointer">
