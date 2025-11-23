@@ -1,11 +1,11 @@
-import ChatRoomList from "@/components/chat/chatRoomLIst"
+import { ChatGroupModal } from "@/modules/auth/chat-room/chat-room-view";
 
-const Page = () =>{
-    return (
-        <div className="flex items-center justify-center">
-            <ChatRoomList/>
-        </div>
-    )
-}
+const Page = () => {
+  return (
+    <div className="flex h-full flex-col rounded-sm bg-white">
+      <ChatGroupModal open={undefined} onClose={undefined} addPeople={undefined} />
+    </div>
+  );
+};
 
-export default Page
+export default Page;
