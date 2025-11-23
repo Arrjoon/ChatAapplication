@@ -1,7 +1,7 @@
 // AUTH ROUTES
 export const LOGIN = "auth/login/";
-export const VERIFY_TOKEN = "auth/login/verify/";
-export const REFRESH_TOKEN = "auth/login/refresh/";
+export const VERIFY_TOKEN = "auth/token/verify/";
+export const REFRESH_TOKEN = "auth/token/refresh/";
 export const LOGOUT = "auth/logout/";
 export const RESET_PASSWORD = "auth/reset-password/";
 export const FORGET_PASSWORD = "auth/forgot-password/";
