@@ -132,21 +132,47 @@ class RegisterView(generics.CreateAPIView):
 
 class RefreshTokenView(TokenRefreshView):
     """
-    Refresh JWT tokens while maintaining session
+    Refresh JWT access token using refresh token stored in cookies
     """
     serializer_class = RefreshTokenSerializer
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        
-        # Update last_seen_at for the session if you track current session ID
-        if hasattr(request, 'session_id'):
-            UserSession.objects.filter(
-                id=request.session_id
-            ).update(last_seen_at=timezone.now())
-        
-        return response
+        # 1️⃣ Read refresh token from cookie
+        refresh_token = request.COOKIES.get("refresh_token")
 
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token not found in cookies"},
+                status=400
+            )
+
+        # 2️⃣ Inject refresh token into request.data
+        request.data["refresh"] = refresh_token
+
+        # 3️⃣ Call SimpleJWT's built-in refresh logic
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            # 4️⃣ Get new access token
+            access_token = response.data["access"]
+
+            # 5️⃣ Update access_token cookie
+            response.set_cookie(
+                key="access_token",
+                value=access_token,
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+                max_age=60 * 5,  # 5 minutes
+            )
+
+            # 6️⃣ Update last_seen_at for the session (optional)
+            if hasattr(request, 'session_id'):
+                UserSession.objects.filter(
+                    id=request.session_id
+                ).update(last_seen_at=timezone.now())
+
+        return response
 
 class LogoutView(generics.GenericAPIView):
     """

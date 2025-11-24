@@ -213,19 +213,25 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
             "user_id": str(user.id),
         }
 
-
+from rest_framework_simplejwt.exceptions import TokenError
 class RefreshTokenSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
     def validate(self, attrs):
         refresh = attrs['refresh']
+
+        # 1️⃣ Validate token
         try:
             token = RefreshToken(refresh)
-        except Exception as e:
-            raise serializers.ValidationError('Invalid token')
-        
-        # Check if token is blacklisted
+        except TokenError:
+            raise serializers.ValidationError("Invalid refresh token")
+
+        # 2️⃣ Blacklist check (adjust for your setup)
         if BlacklistedToken.objects.filter(token=refresh).exists():
-            raise serializers.ValidationError('Token is blacklisted')
-        
-        return attrs
+            raise serializers.ValidationError("Token is blacklisted")
+
+        # 3️⃣ Return a dict containing both access & refresh
+        return {
+            "access": str(token.access_token),
+            "refresh": str(token)
+        }
