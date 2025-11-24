@@ -5,9 +5,10 @@ import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-service
 import { User } from "lucide-react";
 import { use, useEffect, useState } from "react";
 
+const api = new ChatRoomApiServices();
 export const ChatSidebar = () => {
 
-    
+    const [ searchTerm, setSearchTerm] = useState<string>("");
 
     const getInitials = (name:string) => {
       return name
@@ -20,17 +21,21 @@ export const ChatSidebar = () => {
 
     const [rooms,setRooms] = useState<TChatRoomListResponse>([]);
 
-    const api = new ChatRoomApiServices();
     
 
     const loadChatRooms = async () => {
-      const response = await api.fetchChatRoomsList();
+      const response = await api.fetchChatRoomsList(searchTerm);
       setRooms(response);
     };
 
     useEffect(() => {
-      loadChatRooms();
-    }, []);
+        try{
+            loadChatRooms();
+        }
+        catch(err){
+            console.error("Failed to load chat rooms:", err);
+        }
+    }, [searchTerm]);
 
 
   return (
@@ -58,6 +63,8 @@ export const ChatSidebar = () => {
                         type="text" 
                         placeholder="Search chats..." 
                         className="border border-gray-300 rounded-lg w-full px-3 py-2 focus:outline-none foucs:ring-2 focus:ring-blue-400"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 {/* chat list  */}    

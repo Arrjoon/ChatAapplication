@@ -3,9 +3,13 @@ import { IChatRoomApiServices, TChatRoomListResponse } from "./chat-room-api-def
 import { FETCH_CHAT_ROOMS_LIST } from "@/lib/end-points";
 
 class ChatRoomApiServices implements IChatRoomApiServices {
-    async fetchChatRoomsList(): Promise<TChatRoomListResponse> {
+    async fetchChatRoomsList(search?:string): Promise<TChatRoomListResponse> {
         // Implementation for fetching chat rooms list
-        const response = await apiClient.get(FETCH_CHAT_ROOMS_LIST);
+        const response = await apiClient.get(FETCH_CHAT_ROOMS_LIST,{
+            params:{
+                name: search || ''
+            }
+        });
         return response.data;
     }
 

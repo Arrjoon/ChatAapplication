@@ -157,7 +157,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'display_name', 'email_verified', 'date_joined', 'last_login']
+        fields = ['id', 'username', 'email', 'display_name','profile_picture','email_verified', 'date_joined', 'last_login']
         read_only_fields = ['id', 'email_verified', 'date_joined', 'last_login']
 
 

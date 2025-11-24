@@ -1,6 +1,6 @@
 
 export interface IChatRoomApiServices {
-    fetchChatRoomsList(): Promise<TChatRoomListResponse>;
+    fetchChatRoomsList(name:string): Promise<TChatRoomListResponse>;
     fetchChatRoomDetails(roomId: number): Promise<any>;
     createChatRoom(name: string, members: number[]): Promise<any>;
 }

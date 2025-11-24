@@ -32,6 +32,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+profile_picture
+/media/profile_pictures/
+backend/linkedinprofile.png
+
 
 # Django stuff
 *.log
