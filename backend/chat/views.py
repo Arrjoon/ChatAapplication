@@ -22,12 +22,17 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         """
         Return chat rooms where current user is a participant
         """
-        return ChatRoom.objects.filter(
-            participants=self.request.user
-        ).annotate(
-            message_count=Count('messages'),
-            last_message_time=Max('messages__timestamp')
-        ).order_by('-last_message_time')
+        queryset = ChatRoom.objects.filter(
+                participants=self.request.user
+            ).annotate(
+                message_count=Count('messages'),
+                last_message_time=Max('messages__timestamp')
+            ).order_by('-last_message_time')
+        
+        search = self.request.query_params.get('name', None)
+        if search:
+            queryset = queryset.filter(name__icontains=search)  
+        return queryset    
 
     def create(self, request):
         """

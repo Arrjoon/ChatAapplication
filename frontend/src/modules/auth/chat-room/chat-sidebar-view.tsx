@@ -1,8 +1,13 @@
 "use client";
 
+import { TChatRoomListResponse } from "@/api-services/chat-rooms/chat-room-api-definations";
+import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-services";
 import { User } from "lucide-react";
+import { use, useEffect, useState } from "react";
 
 export const ChatSidebar = () => {
+
+    
 
     const getInitials = (name:string) => {
       return name
@@ -12,14 +17,20 @@ export const ChatSidebar = () => {
         .toUpperCase()
         .slice(0, 2);
     }
-  // Static chat rooms
-  const chatRooms = [
-    { id: 1, name: "Snowberry", lastMessage: "Hey, how are you?", avatar: "" },
-    { id: 2, name: "TingTing", lastMessage: "Let's meet tomorrow.", avatar: "" },
-    { id: 3, name: "Pomelo HRM", lastMessage: "Campaign launch at 5 PM. dfgfdjgkldfgj dgj dfgjkldfg jdflg jdflgj dflgjdfklgjdfklg dflgjdfklgj dfklgjdf gdfg jf", avatar: "" },
-    { id: 4, name: "Design Team", lastMessage: "Please review the new designs.", avatar: "" },
-    { id: 5, name: "Mike Johnson", lastMessage: "Can you send the report?", avatar: "" },
-  ];
+
+    const [rooms,setRooms] = useState<TChatRoomListResponse>([]);
+
+    const api = new ChatRoomApiServices();
+    
+
+    const loadChatRooms = async () => {
+      const response = await api.fetchChatRoomsList();
+      setRooms(response);
+    };
+
+    useEffect(() => {
+      loadChatRooms();
+    }, []);
 
 
   return (
@@ -52,7 +63,7 @@ export const ChatSidebar = () => {
                 {/* chat list  */}    
 
                 <div className="flex-col overflow-y-auto h-[calc(100vh-120px)]">
-                    {chatRooms.map((room) => (
+                    {rooms.map((room) => (
                     <div key={room.id} className="flex items-center p-4 hover:bg-gray-50 cursor-pointer">
                         {room.avatar ? (
                         <img src={room.avatar} alt={room.name} className="avatar" />
@@ -63,7 +74,7 @@ export const ChatSidebar = () => {
                         )}
                         <div className="flex-1 ml-3 overflow-hidden">
                             <div className="font-semibold text-gray-800 truncate">{room.name}</div>
-                            <div className="font-serif truncate">{room.lastMessage}</div>
+                            <div className="font-serif truncate">{room.last_message?.content}</div>
                         </div>
                     </div>
                     ))}
