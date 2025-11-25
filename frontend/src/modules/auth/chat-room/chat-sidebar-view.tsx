@@ -24,8 +24,13 @@ export const ChatSidebar = () => {
     
 
     const loadChatRooms = async () => {
-      const response = await api.fetchChatRoomsList(searchTerm);
-      setRooms(response);
+      try{
+          const response = await api.fetchChatRoomsList(searchTerm);
+          setRooms(response);
+      }
+      catch(err){
+          console.error("Error fetching chat rooms:", err);
+      }
     };
 
     useEffect(() => {
