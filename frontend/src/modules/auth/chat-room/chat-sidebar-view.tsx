@@ -5,10 +5,13 @@ import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-service
 import { User } from "lucide-react";
 import { use, useEffect, useState } from "react";
 
+
 const api = new ChatRoomApiServices();
 export const ChatSidebar = () => {
 
     const [ searchTerm, setSearchTerm] = useState<string>("");
+
+    const [loading,setLoading]=useState<boolean>(false);
 
     const getInitials = (name:string) => {
       return name
@@ -24,12 +27,17 @@ export const ChatSidebar = () => {
     
 
     const loadChatRooms = async () => {
+      setLoading(true);
       try{
+        //   await new Promise(resolve => setTimeout(resolve, 2000));
           const response = await api.fetchChatRoomsList(searchTerm);
           setRooms(response);
       }
       catch(err){
           console.error("Error fetching chat rooms:", err);
+      }
+      finally{
+          setLoading(false);
       }
     };
 
@@ -72,7 +80,15 @@ export const ChatSidebar = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                {/* chat list  */}    
+                {/* chat list  */}   
+
+                {loading && (
+                    <div className="flex items-center justify-center p-4">
+                        Loading chat rooms...
+                    </div>
+                )}
+
+                {!loading && (
 
                 <div className="flex-col overflow-y-auto h-[calc(100vh-120px)]">
                     {rooms.map((room) => (
@@ -91,6 +107,7 @@ export const ChatSidebar = () => {
                     </div>
                     ))}
                 </div>
+            )}
             </div>
         </div>
        
