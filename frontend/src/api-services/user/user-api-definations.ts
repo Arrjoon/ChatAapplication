@@ -1,4 +1,8 @@
 
+export interface IUserServices {
+    fetchUserProfile(userId: string): Promise<userprofileresponse>;
+}
+
 
 type userprofileresponse = {
   id: string;
@@ -9,3 +13,4 @@ type userprofileresponse = {
 };
 
 export type { userprofileresponse };
+

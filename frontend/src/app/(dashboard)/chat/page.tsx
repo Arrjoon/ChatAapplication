@@ -1,16 +1,22 @@
 "use client";
 
-import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-services";
-import { useEffect } from "react";
-
+import { useUser } from '@/context/UserContext';
 
 export default function ChatRoomTestPage() {
-    return <div>
+    const { user, isLoading, isError, refetch } = useUser();
 
+    if (isLoading) return <p>Loading user...</p>;
+    if (isError) return <p>Failed to load user data.</p>;
+
+    return <div>
         <div className="relative bg-gray-300 p-10 h-80">
             <div className="absolute top-0 left-0 bg-red-500 p-2">
                 Top Left
             </div>
+         
+
+            <div>{user?.username}</div>
+            <div>{user?.profile_picture}</div>
             
             <div className="absolute top-0 right-0 bg-blue-500 p-2">
                 Top Right
@@ -33,10 +39,10 @@ export default function ChatRoomTestPage() {
         </div>
 
         <div className="relative ">
-        <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            3
-        </span>
+            <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                3
+            </span>
         </div>
     </div>;
 }
