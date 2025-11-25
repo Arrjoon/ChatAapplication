@@ -4,6 +4,7 @@ import { TChatRoomListResponse } from "@/api-services/chat-rooms/chat-room-api-d
 import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-services";
 import { User } from "lucide-react";
 import { use, useEffect, useState } from "react";
+import SidebarUserInfo from "./user-info-view";
 
 
 const api = new ChatRoomApiServices();
@@ -54,20 +55,7 @@ export const ChatSidebar = () => {
   return (
     <div className="w-80 bg-white border-r border-gray-200 h-screen flex flex-col" >
         {/* your info  */}
-            <div className="flex items-center justify-between p-4 border-gray-200">
-                <div className="flex-1 p-2 border-b border-gray-200 flex items-center gap-2">
-                    <div className="bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
-                        <User className="h-30 w-8 text-gray-500" />
-                    </div>
-                    <div className="flex-col items-center text-xl">
-                        <div className="font-bold">You</div>
-                        <div className="text-sm">online</div>
-                    </div>
-                </div>
-                <div >
-                    New
-                </div>
-            </div>
+            <SidebarUserInfo />
             <div>
                 <div className="flex items-center justify-center"> chats </div>
                 {/* search bar */}
