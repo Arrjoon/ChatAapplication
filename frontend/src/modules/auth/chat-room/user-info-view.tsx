@@ -2,6 +2,7 @@
 
 import { User } from 'lucide-react';
 import { useUser } from '@/context/UserContext'; 
+import SidebarDropdown from './drop-down-model';
 
 const SidebarUserInfo = () => {
   const { user } = useUser(); 
@@ -18,6 +19,7 @@ const SidebarUserInfo = () => {
         </div>
       </div>
       <div>New</div>
+      <SidebarDropdown />
     </div>
   );
 };

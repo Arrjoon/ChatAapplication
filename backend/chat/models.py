@@ -62,3 +62,11 @@ class UserStatus(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {'Online' if self.is_online else 'Offline'}"
+    
+
+class DirectMessage(models.Model):
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="direct_sent_messages")
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="direct_received_messages")
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    message_type = models.CharField(max_length=50, default='text')

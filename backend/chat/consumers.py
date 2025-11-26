@@ -2,8 +2,9 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
-from .models import ChatRoom, Message, MessageReadStatus, UserStatus
+from .models import ChatRoom, Message, MessageReadStatus, UserStatus,DirectMessage
 from django.utils import timezone
+
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -48,7 +49,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 'type': 'user_join',
-                'user_id': self.user.id,
+                'user_id': str(self.user.id),
                 'username': self.user.username
             }
         )
@@ -65,7 +66,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 'type': 'user_leave',
-                'user_id': self.user.id,
+                'user_id': str(self.user.id),
                 'username': self.user.username
             }
         )
@@ -124,7 +125,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'type': 'chat_message_broadcast',
                     'message_id': message.id,
                     'message': message.content,
-                    'sender_id': self.user.id,
+                    'sender_id': str(self.user.id),
                     'sender_username': self.user.username,
                     'timestamp': message.timestamp.isoformat(),
                     'message_type': message.message_type
@@ -142,7 +143,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 'type': 'typing_indicator',
-                'user_id': self.user.id,
+                'user_id': str(self.user.id),
                 'username': self.user.username,
                 'is_typing': is_typing
             }
@@ -162,7 +163,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'read_receipt_broadcast',
                     'message_id': message_id,
-                    'user_id': self.user.id,
+                    'user_id': str(self.user.id),
                     'username': self.user.username
                 }
             )
@@ -319,3 +320,69 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             'message': event['message'],
             'data': event.get('data', {})
         }))
+
+
+
+class DirectChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.user = self.scope["user"]
+        self.other_user_id = self.scope['url_route']['kwargs']['user_id']  # user to chat with
+        self.other_user = await database_sync_to_async(User.objects.get)(id=self.other_user_id)
+
+        if not self.user.is_authenticated:
+            await self.close()
+            return
+
+        # Create a unique group for the pair (smaller ID first to avoid duplicates)
+        user_ids = sorted([str(self.user.id), str(self.other_user.id)])
+        self.room_group_name = f"direct_{user_ids[0]}_{user_ids[1]}"
+
+        # Join group
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        message_content = data.get('message', '')
+
+        if not message_content.strip():
+            return
+
+        # Save message to DB
+        message = await self.save_message(message_content)
+
+        # Send to both users in group
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'direct_message_broadcast',
+                'message_id': message.id,
+                'sender_id': str(self.user.id),
+                'sender_username': self.user.username,
+                'receiver_id': str(self.other_user.id),
+                'message': message.content,
+                'timestamp': message.timestamp.isoformat(),
+                'message_type': message.message_type
+            }
+        )
+
+    async def direct_message_broadcast(self, event):
+        await self.send(text_data=json.dumps(event))
+
+    @database_sync_to_async
+    def save_message(self, content):
+        return DirectMessage.objects.create(
+            sender=self.user,
+            receiver=self.other_user,
+            content=content
+        )
