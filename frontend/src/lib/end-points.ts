@@ -17,6 +17,7 @@ export const BASE_URL =
 
 
 export const FETCH_CHAT_ROOMS_LIST = "chat/rooms/";
+export const CREATE_GROUP_CHAT = "chat/api/rooms/";
 export const FETCH_CHAT_ROOM_DETAILS = (roomId: number) =>
   `chat/rooms/${roomId}/`;  
 

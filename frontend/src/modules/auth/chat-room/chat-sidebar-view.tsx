@@ -5,9 +5,10 @@ import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-service
 import { User } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import SidebarUserInfo from "./user-info-view";
+import chatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-services";
 
 
-const api = new ChatRoomApiServices();
+
 export const ChatSidebar = () => {
 
     const [ searchTerm, setSearchTerm] = useState<string>("");
@@ -31,7 +32,7 @@ export const ChatSidebar = () => {
       setLoading(true);
       try{
         //   await new Promise(resolve => setTimeout(resolve, 2000));
-          const response = await api.fetchChatRoomsList(searchTerm);
+          const response = await chatRoomApiServices.fetchChatRoomsList(searchTerm);
           setRooms(response);
       }
       catch(err){

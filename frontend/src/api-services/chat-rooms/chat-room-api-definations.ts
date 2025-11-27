@@ -2,7 +2,7 @@
 export interface IChatRoomApiServices {
     fetchChatRoomsList(name:string): Promise<TChatRoomListResponse>;
     fetchChatRoomDetails(roomId: number): Promise<any>;
-    createChatRoom(name: string, members: number[]): Promise<any>;
+    createChatRoom(req:FormData): Promise<TCreateChatRoomPayload>;
 }
 
 
@@ -33,4 +33,5 @@ export type TCreateChatRoomPayload = {
     name: string;
     participants: any[];
     is_group:boolean;
+    picture: File | string;
 };

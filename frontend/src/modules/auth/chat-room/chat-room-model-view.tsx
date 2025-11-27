@@ -1,6 +1,9 @@
 "use client";
 
+import { CreateGroupChatFormData, createGroupChatSchema } from "@/modules/chat-group-schema";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 type UserType = {
   id: number;
@@ -24,6 +27,13 @@ export default function ChatRoomModalView({
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
 
   if (!isOpen) return null;
+
+  const form = useForm<CreateGroupChatFormData>(
+    {
+      resolver:zodResolver(createGroupChatSchema),
+      // defaultValues: getDefaultValues(),
+    }
+  );
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())

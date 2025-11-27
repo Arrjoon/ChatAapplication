@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/api-client";
-import { IChatRoomApiServices, TChatRoomListResponse } from "./chat-room-api-definations";
+import { IChatRoomApiServices, TChatRoomListResponse, TCreateChatRoomPayload } from "./chat-room-api-definations";
 import { FETCH_CHAT_ROOMS_LIST } from "@/lib/end-points";
 
 class ChatRoomApiServices implements IChatRoomApiServices {
@@ -17,9 +17,15 @@ class ChatRoomApiServices implements IChatRoomApiServices {
         // Implementation for fetching chat room details
     }
 
-    async createChatRoom(name: string, members: number[]): Promise<any> {
+    async createChatRoom(req:FormData): Promise<TCreateChatRoomPayload> {
         // Implementation for creating a new chat room
+        const response =  await apiClient.post(FETCH_CHAT_ROOMS_LIST, req, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
     }
 }
 
-export default ChatRoomApiServices;
+export default new ChatRoomApiServices;
