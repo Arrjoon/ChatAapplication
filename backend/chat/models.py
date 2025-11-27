@@ -7,6 +7,7 @@ from django.utils import timezone
 class ChatRoom(models.Model):
     name = models.CharField(max_length=255)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='chat_rooms')
+    picture = models.ImageField(upload_to='chat_room_pictures/', null=True, blank=True)
     is_group = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
