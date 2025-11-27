@@ -89,7 +89,7 @@ export const ChatSidebar = () => {
                         </div>
                         )}
                         <div className="flex-1 ml-3 overflow-hidden">
-                            <div className="font-semibold text-gray-800 truncate">{room.name}</div>
+                            <div className="font-bold truncate">{room.name}</div>
                             <div className="font-serif truncate">{room.last_message?.content}</div>
                         </div>
                     </div>
