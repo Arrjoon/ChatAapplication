@@ -2,7 +2,7 @@
 export interface IChatRoomApiServices {
     fetchChatRoomsList(name:string): Promise<TChatRoomListResponse>;
     fetchChatRoomDetails(roomId: number): Promise<any>;
-    createChatRoom(req:FormData): Promise<TCreateChatRoomPayload>;
+    createChatRoom(req:FormData): Promise<TChatRoomResponse>;
 }
 
 
