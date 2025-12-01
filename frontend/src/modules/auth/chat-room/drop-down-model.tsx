@@ -1,8 +1,9 @@
-'use client';
+"use client";
 import { useState, useRef, useEffect } from 'react';
 import { UserPlus, Star, CheckSquare, Lock, LogOut } from 'lucide-react';
 import AddGroupSidebar from './chat-room-model-view';
 import ChatRoomModalView from './chat-room-model-view';
+import { useLogout } from '@/hooks/auth/useLogout';
 
 
 type UserType = {
@@ -34,6 +35,8 @@ const SidebarDropdown = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+   const { mutate: Logout,isPending } = useLogout();
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -63,9 +66,10 @@ const SidebarDropdown = () => {
             <li className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer">
               <Lock className="w-5 h-5" /> App lock
             </li>
-            <li className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer">
-              <LogOut className="w-5 h-5" /> Log out
-            </li>
+            <button className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={()=>Logout()} disabled={isPending}>
+              <LogOut className="w-5 h-5" /> Log out 
+            </button>
+            {isPending && <p className="px-4 py-2 text-sm text-gray-500">Logging out...</p>}
           </ul>
         </div>
       )}

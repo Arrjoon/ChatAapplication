@@ -174,34 +174,45 @@ class RefreshTokenView(TokenRefreshView):
 
         return response
 
+
 class LogoutView(generics.GenericAPIView):
     """
     Logout from current session:
     1. Blacklists the refresh token
     2. Marks session as inactive
     """
+
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = RefreshTokenSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # Blacklist refresh token
-        refresh_token = serializer.validated_data['refresh']
-        BlacklistedToken.objects.create(token=refresh_token)
-        
-        # Mark current session as inactive
-        if hasattr(request, 'session_id'):
-            UserSession.objects.filter(
-                id=request.session_id,
-                user=request.user
-            ).update(is_active=False)
-        
-        return Response(
-            {'detail': 'Successfully logged out.'},
-            status=status.HTTP_200_OK
-        )
+        # 1️⃣ Try to get refresh token from cookie first
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        # 2️⃣ If not in cookies, fallback to request body
+        if not refresh_token:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            refresh_token = serializer.validated_data['refresh']
+
+        # 3️⃣ Validate token
+        try:
+            token = RefreshToken(refresh_token)
+        except TokenError:
+            return Response({"detail": "Invalid refresh token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 4️⃣ Blacklist token
+        BlacklistedToken.objects.create(token=str(token))
+
+        # 5️⃣ Mark session inactive
+        if hasattr(request, "session_id"):
+            UserSession.objects.filter(id=request.session_id, user=request.user).update(is_active=False)
+
+        # 6️⃣ Optionally clear the cookies
+        response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        response.delete_cookie("access_token")
+        response.delete_cookie("refresh_token")
+        return response
 
 
 class LogoutAllView(generics.GenericAPIView):
