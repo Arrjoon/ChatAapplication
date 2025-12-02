@@ -1,19 +1,20 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from . import views
-
-# API router
-router = DefaultRouter()
-router.register(r'rooms', views.ChatRoomViewSet, basename='chatroom')
-router.register(r'user-status', views.UserStatusViewSet, basename='userstatus')
-
-app_name = 'chat'
+from django.urls import path
+from .views import (
+    UserListAPIView,
+    ChatRoomListAPIView,
+    OneToOneChatAPIView,
+    CreateGroupAPIView,
+    AddMembersAPIView,
+    MessageListAPIView,
+    ConvertToGroupAPIView, 
+)
 
 urlpatterns = [
-    # API endpoints
-    path('', include(router.urls)),
-    
-    # Template views
-    path('room/<int:room_id>/', views.chat_room, name='chat_room'),
-    path('', views.chat_list, name='chat_list'),
+    path("users/", UserListAPIView.as_view(), name="user-list"),
+    path("", ChatRoomListAPIView.as_view(), name="chatroom-list"),
+    path("one-to-one/", OneToOneChatAPIView.as_view(), name="one-to-one"),
+    path("group/create/", CreateGroupAPIView.as_view(), name="group-create"),
+    path("group/add-members/", AddMembersAPIView.as_view(), name="add-members"),
+    path("<int:room_id>/messages/", MessageListAPIView.as_view(), name="message-list"),
+    path("convert-to-group/", ConvertToGroupAPIView.as_view(), name="convert-to-group"),
 ]

@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Rooms</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #075e54;
+            margin-bottom: 30px;
+        }
+
+        .user-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .room-list {
+            list-style: none;
+        }
+
+        .room-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .room-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .room-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #075e54;
+            margin-bottom: 5px;
+        }
+
+        .room-info {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .room-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .no-rooms {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            color: #666;
+        }
+
+        .logout-btn {
+            background: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="user-info">
+            <strong>Logged in as:</strong> {{ request.user.username }}
+            <a href="{% url 'admin:logout' %}" class="logout-btn" style="float: right;">Logout</a>
+        </div>
+
+        <h1>Your Chat Rooms</h1>
+
+        {% if rooms %}
+            <ul class="room-list">
+                {% for room in rooms %}
+                    <li class="room-item">
+                        <a href="{% url 'chat:chat_room' room.id %}" class="room-link">
+                            <div class="room-name">{{ room.name }}</div>
+                            <div class="room-info">
+                                Participants: {{ room.participants.count }} | 
+                                {% if room.get_last_message %}
+                                    Last message: {{ room.get_last_message.timestamp|timesince }} ago
+                                {% else %}
+                                    No messages yet
+                                {% endif %}
+                            </div>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="no-rooms">
+                <p>You don't have any chat rooms yet.</p>
+                <p>An administrator needs to add you to a room.</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

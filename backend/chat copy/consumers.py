@@ -79,7 +79,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         """
-        Called when message is received from WebSocket ,Every time the client sends something: socket.send(JSON.stringify({type: "chat_message", message: "hi"}));
+        Called when message is received from WebSocket
         """
         try:
             data = json.loads(text_data)

@@ -1,106 +1,71 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import ChatRoom, Message, MessageReadStatus, UserStatus
+from django.contrib.auth import get_user_model
+from .models import ChatRoom, Message
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for User model"""
-    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
-        read_only_fields = ['id']
-
-
-class MessageSerializer(serializers.ModelSerializer):
-    """Serializer for Message model"""
-    
-    sender = UserSerializer(read_only=True)
-    read_by = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Message
-        fields = ['id', 'room', 'sender', 'content', 'message_type', 
-                  'timestamp', 'is_read', 'read_by']
-        read_only_fields = ['id', 'timestamp']
-
-    def get_read_by(self, obj):
-        """Get list of users who read this message"""
-        read_statuses = obj.read_statuses.select_related('user')
-        return [
-            {
-                'user_id': rs.user.id, 
-                'username': rs.user.username, 
-                'read_at': rs.read_at
-            } 
-            for rs in read_statuses
-        ]
+        fields = ["id", "username", "first_name", "last_name"]
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
-    participants = serializers.StringRelatedField(many=True)
+    participants = UserSerializer(many=True)
     last_message = serializers.SerializerMethodField()
-    unread_count = serializers.SerializerMethodField()
-    participant_ids = serializers.ListField(
-        child=serializers.IntegerField(), write_only=True, required=False
-    )
 
     class Meta:
         model = ChatRoom
-        fields = ['id', 'name', 'participants', 'is_group', 
-                  'created_at', 'updated_at', 'last_message', 
-                  'unread_count', 'participant_ids']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "name",
+            "is_group",
+            "participants",
+            "picture",
+            "last_message",
+            "created_at",
+            "updated_at",
+        ]
 
     def get_last_message(self, obj):
-        last_msg = getattr(obj, 'get_last_message', lambda: None)()
+        last_msg = obj.messages.order_by("-timestamp").first()
         if last_msg:
-            return {
-                'id': last_msg.id,
-                'content': last_msg.content,
-                'sender': last_msg.sender.username,
-                'timestamp': last_msg.timestamp
-            }
+            return MessageSerializer(last_msg).data
         return None
 
-    def get_unread_count(self, obj):
-        request = self.context.get('request')
-        if request and request.user:
-            return getattr(obj, 'messages', obj).exclude(
-                read_statuses__user=request.user
-            ).exclude(sender=request.user).count()
-        return 0
 
-    def create(self, validated_data):
-        participant_ids = validated_data.pop('participant_ids', [])
-        room = ChatRoom.objects.create(**validated_data)
-        request = self.context.get('request')
-        if request and request.user:
-            room.participants.add(request.user)
-        if participant_ids:
-            room.participants.add(*participant_ids)
-        return room
+class MessageSerializer(serializers.ModelSerializer):
 
-    def update(self, instance, validated_data):
-        participant_ids = validated_data.pop('participant_ids', [])
-        instance.name = validated_data.get('name', instance.name)
-        instance.save()
-        instance.participants.clear()
-        request = self.context.get('request')
-        if request and request.user:
-            instance.participants.add(request.user)
-        if participant_ids:
-            instance.participants.add(*participant_ids)
-        return instance
-
-
-
-class UserStatusSerializer(serializers.ModelSerializer):
-    """Serializer for UserStatus model"""
-    
-    user = UserSerializer(read_only=True)
+    sender = UserSerializer()
 
     class Meta:
-        model = UserStatus
-        fields = ['user', 'is_online', 'last_seen']
-        read_only_fields = ['last_seen']
+        model = Message
+        fields = [
+            "id",
+            "sender",
+            "message_type",
+            "content",
+            "timestamp",
+            "is_read",
+        ]
+
+
+# CREATE GROUP
+class CreateGroupSerializer(serializers.Serializer):
+    group_name = serializers.CharField(max_length=255)
+    picture = serializers.ImageField(required=False)
+    user_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+
+
+# ADD MEMBERS
+class AddMembersSerializer(serializers.Serializer):
+    group_id = serializers.IntegerField()
+    user_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+
+
+
+class ConvertToGroupSerializer(serializers.Serializer):
+    room_id = serializers.IntegerField()
+    name = serializers.CharField(required=False, allow_blank=True)
+    member_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
