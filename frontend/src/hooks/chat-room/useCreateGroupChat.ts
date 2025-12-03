@@ -8,7 +8,7 @@ export const useCreateGroupChat = () => {
     return useMutation<TChatRoomResponse,Error,TCreateChatRoomPayload>({
       mutationFn: async (req) => {
         const formData = new FormData();
-        formData.append("group_name", req.name ?? "");
+        formData.append("name", req.name ?? "");
 
         if (req.picture instanceof File) {
           formData.append("picture", req.picture);

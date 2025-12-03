@@ -34,5 +34,5 @@ export type TCreateChatRoomPayload = {
     name: string;
     participants: any[];
     is_group:boolean;
-    picture: File | string;
+    picture: File | string | null;
 };
