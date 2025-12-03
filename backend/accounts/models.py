@@ -68,7 +68,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, db_index=True)
     display_name = models.CharField(max_length=100, blank=True, null=True)
     profile_picture = models.ImageField(blank=True, null=True,upload_to='mdia/profile_pictures/')
-
+    is_admin        = models.BooleanField(default=False)
     # account flags
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

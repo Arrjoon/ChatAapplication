@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 
 class ChatRoom(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255,blank=True, null=True)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='chat_rooms')
     picture = models.ImageField(upload_to='chat_room_pictures/', null=True, blank=True)
     is_group = models.BooleanField(default=False)
@@ -36,7 +36,9 @@ class Message(models.Model):
     message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES, default='text')
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
-    
+    is_seen = models.BooleanField(default=False)
+    seen_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ['timestamp']
 
@@ -71,3 +73,9 @@ class DirectMessage(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     message_type = models.CharField(max_length=50, default='text')
+
+
+class MessageDeletion(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    message = models.ForeignKey(Message)
+    deleted_at = models.DateTimeField(auto_now_add=True)

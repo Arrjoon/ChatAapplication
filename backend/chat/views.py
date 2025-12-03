@@ -141,7 +141,7 @@ class ConvertToGroupAPIView(generics.GenericAPIView):
             name=group_name,
             is_group=True,
             picture=serializer.validated_data.get("picture", None),
-            created_by=request.user  # If you add this field
+            created_by=request.user 
         )
         
         # Add all participants from original chat + new members
@@ -196,6 +196,13 @@ class RemoveMemberAPIView(generics.GenericAPIView):
         room_id = request.data.get('room_id')
 
         room = get_object_or_404(ChatRoom, pk=room_id, is_group=True)
+        
+        if not room.is_group:
+            return Response(
+                {"detail": "Cannot remove users from 1-to-1 chat"},
+                status=400
+            )
+
 
         # Only allow if request.user is a member
         if request.user not in room.participants.all():
@@ -215,6 +222,13 @@ class LeaveGroupAPIView(generics.GenericAPIView):
 
         room = get_object_or_404(ChatRoom, pk=room_id, is_group=True)
 
+        if not room.is_group:
+            return Response(
+                {"detail": "You cannot leave a 1-to-1 chat"},
+                status=400
+            )
+
+
         # Only allow if request.user is a member
         if request.user not in room.participants.all():
             return Response({"detail": "Not allowed"}, status=403)
@@ -223,3 +237,20 @@ class LeaveGroupAPIView(generics.GenericAPIView):
         room.save()
 
         return Response(ChatRoomSerializer(room).data)
+    
+
+
+class MessageListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id):
+        room = get_object_or_404(ChatRoom, id=room_id, participants=request.user)
+
+        # 🔹 Mark all messages from others as SEEN
+        room.messages.filter(
+            sender__ne=request.user,   # exclude your own messages
+            is_seen=False
+        ).update(is_seen=True)
+
+        messages = room.messages.all()
+        return Response(MessageSerializer(messages, many=True).data)

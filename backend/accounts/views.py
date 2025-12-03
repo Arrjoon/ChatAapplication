@@ -458,3 +458,4 @@ class SessionRevokeView(generics.DestroyAPIView):
             refresh_token = self.request.data.get('refresh')
             if refresh_token:
                 BlacklistedToken.objects.create(token=refresh_token)
+
