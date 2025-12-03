@@ -77,5 +77,5 @@ class DirectMessage(models.Model):
 
 class MessageDeletion(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    message = models.ForeignKey(Message)
+    message = models.ForeignKey(Message,on_delete=models.CASCADE)
     deleted_at = models.DateTimeField(auto_now_add=True)

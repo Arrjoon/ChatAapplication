@@ -6,7 +6,7 @@ from .models import ChatRoom, Message, MessageReadStatus, UserStatus
 class ChatRoomAdmin(admin.ModelAdmin):
     """Admin interface for ChatRoom model"""
     
-    list_display = ['id', 'name', 'is_group', 'created_at', 'participant_count']
+    list_display = ['id', 'name','picture', 'is_group', 'created_at', 'participant_count']
     list_filter = ['is_group', 'created_at']
     search_fields = ['name']
     filter_horizontal = ['participants']
@@ -14,7 +14,7 @@ class ChatRoomAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Room Information', {
-            'fields': ('name', 'is_group')
+            'fields': ('name', 'is_group','picture')
         }),
         ('Participants', {
             'fields': ('participants',)

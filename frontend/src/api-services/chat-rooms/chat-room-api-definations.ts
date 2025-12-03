@@ -20,6 +20,7 @@ export type TChatRoomResponse = {
     name: string;
     participants: any[];
     is_group:boolean;
+    picture: string | null;
     created_at: string;
     updated_at: string;
     last_message: TLastMessage;

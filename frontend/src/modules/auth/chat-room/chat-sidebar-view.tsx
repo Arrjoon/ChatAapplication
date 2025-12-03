@@ -33,6 +33,7 @@ export const ChatSidebar = () => {
       try{
         //   await new Promise(resolve => setTimeout(resolve, 2000));
           const response = await chatRoomApiServices.fetchChatRoomsList(searchTerm);
+          console.log("Fetched chat rooms:", response);
           setRooms(response);
       }
       catch(err){
@@ -82,17 +83,21 @@ export const ChatSidebar = () => {
                 <div className="flex-col overflow-y-auto h-[calc(100vh-120px)]">
                     {rooms.map((room) => (
                     <div key={room.id} className="flex items-center p-4 hover:bg-gray-50 cursor-pointer">
-                        {room.avatar ? (
-                        <img src={room.avatar} alt={room.name} className="avatar" />
-                        ) : (
-                        <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center">
-                            {getInitials(room.name)}
+                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
+                        
+                            {room.picture ? (
+                            <img src={room.picture} alt={room.name} className="w-full h-full object-cover" />
+                            ) : (
+                            <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center">
+                                {getInitials(room.name)}
+                            </div>
+                            )}
                         </div>
-                        )}
-                        <div className="flex-1 ml-3 overflow-hidden">
-                            <div className="font-bold truncate">{room.name}</div>
-                            <div className="font-serif truncate">{room.last_message?.content}</div>
-                        </div>
+                            <div className="flex-1 ml-3 overflow-hidden">
+                                <div className="font-bold truncate">{room.name}</div>
+                                <div className="font-serif truncate">{room.last_message?.content}</div>
+                            </div>
+                        
                     </div>
                     ))}
                 </div>
