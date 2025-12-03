@@ -8,7 +8,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "first_name", "last_name"]
+        fields = ["id", "username", "display_name", "profile_picture"]
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
@@ -55,17 +55,17 @@ class MessageSerializer(serializers.ModelSerializer):
 class CreateGroupSerializer(serializers.Serializer):
     group_name = serializers.CharField(max_length=255)
     picture = serializers.ImageField(required=False)
-    user_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    user_ids = serializers.ListField(child=serializers.UUIDField(), allow_empty=False)
 
 
 # ADD MEMBERS
 class AddMembersSerializer(serializers.Serializer):
     group_id = serializers.IntegerField()
-    user_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    user_ids = serializers.ListField(child=serializers.UUIDField(), allow_empty=False)
 
 
 
 class ConvertToGroupSerializer(serializers.Serializer):
     room_id = serializers.IntegerField()
     name = serializers.CharField(required=False, allow_blank=True)
-    member_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+    member_ids = serializers.ListField(child=serializers.UUIDField(), required=False)

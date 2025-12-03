@@ -6,7 +6,9 @@ from .views import (
     CreateGroupAPIView,
     AddMembersAPIView,
     MessageListAPIView,
-    ConvertToGroupAPIView, 
+    ConvertToGroupAPIView,
+    RemoveMemberAPIView,
+    LeaveGroupAPIView,
 )
 
 urlpatterns = [
@@ -17,4 +19,7 @@ urlpatterns = [
     path("group/add-members/", AddMembersAPIView.as_view(), name="add-members"),
     path("<int:room_id>/messages/", MessageListAPIView.as_view(), name="message-list"),
     path("convert-to-group/", ConvertToGroupAPIView.as_view(), name="convert-to-group"),
+
+    path('remove-member/', RemoveMemberAPIView.as_view(), name='remove-member'),
+    path('leave-group/', LeaveGroupAPIView.as_view(), name='leave-group'),
 ]

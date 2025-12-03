@@ -110,29 +110,116 @@ class MessageListAPIView(APIView):
 
 
 class ConvertToGroupAPIView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    """
+    Create a NEW group from an existing 1-to-1 chat
+    Optionally copy messages from the original chat
+    """
+    permission_classes = [IsAuthenticated]
     serializer_class = ConvertToGroupSerializer
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
         room_id = serializer.validated_data['room_id']
-        room = get_object_or_404(ChatRoom, pk=room_id)
-
-        # Only allow conversion if request.user is a member (you can tighten)
-        if request.user not in room.members.all():
-            return Response({"detail": "Not allowed"}, status=403)
-
-        room.is_group = True
-        name = serializer.validated_data.get("name")
-        if name:
-            room.name = name
-        room.save()
-
+        original_room = get_object_or_404(ChatRoom, pk=room_id, is_group=False)
+        
+        # Verify user is part of the original chat
+        if request.user not in original_room.participants.all():
+            return Response(
+                {"detail": "You are not a member of this chat"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get the other participant from 1-to-1 chat
+        other_participants = original_room.participants.exclude(id=request.user.id)
+        
+        # Create NEW group (not modifying existing chat)
+        group_name = serializer.validated_data.get("name") or f"Group with {', '.join([p.username for p in other_participants])}"
+        
+        new_group = ChatRoom.objects.create(
+            name=group_name,
+            is_group=True,
+            picture=serializer.validated_data.get("picture", None),
+            created_by=request.user  # If you add this field
+        )
+        
+        # Add all participants from original chat + new members
+        all_participants = list(original_room.participants.all())
+        
+        # Add new members if specified
         member_ids = serializer.validated_data.get("member_ids", [])
         if member_ids:
-            users = User.objects.filter(id__in=member_ids)
-            for u in users:
-                room.members.add(u)
+            new_users = User.objects.filter(id__in=member_ids)
+            for user in new_users:
+                if user not in all_participants:
+                    all_participants.append(user)
+        
+        new_group.participants.add(*all_participants)
+        
+        # Optionally copy messages (with user consent/notification)
+        copy_messages = serializer.validated_data.get("copy_messages", False)
+        if copy_messages:
+            # You might want to limit which messages are copied
+            messages_to_copy = original_room.messages.all()[:50]  # Last 50 messages
+            
+            for message in messages_to_copy:
+                Message.objects.create(
+                    room=new_group,
+                    sender=message.sender,
+                    content=message.content,
+                    is_copy=True  # Add this flag if needed
+                )
+        
+        # Send notification to all participants about new group
+        self._send_group_creation_notification(new_group, request.user)
+        
+        return Response(
+            {
+                "detail": "Group created successfully",
+                "original_chat": ChatRoomSerializer(original_room).data,
+                "new_group": ChatRoomSerializer(new_group).data
+            },
+            status=status.HTTP_201_CREATED
+        )
+    
+    def _send_group_creation_notification(self, group, creator):
+        """Helper to send notifications about group creation"""
+        # You can implement email/push notifications here
+        pass
+    
+class RemoveMemberAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        room_id = request.data.get('room_id')
+
+        room = get_object_or_404(ChatRoom, pk=room_id, is_group=True)
+
+        # Only allow if request.user is a member
+        if request.user not in room.participants.all():
+            return Response({"detail": "Not allowed"}, status=403)
+
+        user_to_remove = get_object_or_404(User, pk=user_id)
+        room.participants.remove(user_to_remove)
+        room.save()
+
+        return Response(ChatRoomSerializer(room).data)
+    
+class LeaveGroupAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        room_id = request.data.get('room_id')
+
+        room = get_object_or_404(ChatRoom, pk=room_id, is_group=True)
+
+        # Only allow if request.user is a member
+        if request.user not in room.participants.all():
+            return Response({"detail": "Not allowed"}, status=403)
+
+        room.participants.remove(request.user)
+        room.save()
 
         return Response(ChatRoomSerializer(room).data)
