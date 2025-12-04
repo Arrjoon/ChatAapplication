@@ -6,6 +6,8 @@ import { User } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import SidebarUserInfo from "./user-info-view";
 import chatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-services";
+import { useFetchChatRoomList } from "@/hooks/chat-room/useFetchChatRoomList";
+import { useDebounce } from "@/hooks/useDebounce";
 
 
 
@@ -14,6 +16,10 @@ export const ChatSidebar = () => {
     const [ searchTerm, setSearchTerm] = useState<string>("");
 
     const [loading,setLoading]=useState<boolean>(false);
+
+    const debouncedSearch = useDebounce(searchTerm, 300);
+
+    const { data:rooms=[], isLoading, isError} = useFetchChatRoomList(debouncedSearch);
 
     const getInitials = (name:string) => {
       return name
@@ -24,34 +30,34 @@ export const ChatSidebar = () => {
         .slice(0, 2);
     }
 
-    const [rooms,setRooms] = useState<TChatRoomListResponse>([]);
+    // const [rooms,setRooms] = useState<TChatRoomListResponse>([]);
 
     
 
-    const loadChatRooms = async () => {
-      setLoading(true);
-      try{
-        //   await new Promise(resolve => setTimeout(resolve, 2000));
-          const response = await chatRoomApiServices.fetchChatRoomsList(searchTerm);
-          console.log("Fetched chat rooms:", response);
-          setRooms(response);
-      }
-      catch(err){
-          console.error("Error fetching chat rooms:", err);
-      }
-      finally{
-          setLoading(false);
-      }
-    };
+    // const loadChatRooms = async () => {
+    //   setLoading(true);
+    //   try{
+    //     //   await new Promise(resolve => setTimeout(resolve, 2000));
+    //       const response = await chatRoomApiServices.fetchChatRoomsList(searchTerm);
+    //       console.log("Fetched chat rooms:", response);
+    //       setRooms(response);
+    //   }
+    //   catch(err){
+    //       console.error("Error fetching chat rooms:", err);
+    //   }
+    //   finally{
+    //       setLoading(false);
+    //   }
+    // };
 
-    useEffect(() => {
-        try{
-            loadChatRooms();
-        }
-        catch(err){
-            console.error("Failed to load chat rooms:", err);
-        }
-    }, [searchTerm]);
+    // useEffect(() => {
+    //     try{
+    //         loadChatRooms();
+    //     }
+    //     catch(err){
+    //         console.error("Failed to load chat rooms:", err);
+    //     }
+    // }, [searchTerm]);
 
 
   return (

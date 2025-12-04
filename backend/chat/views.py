@@ -31,8 +31,11 @@ class ChatRoomListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return ChatRoom.objects.filter(participants=self.request.user).order_by("-updated_at")
-
+        queryset=ChatRoom.objects.filter(participants=self.request.user).order_by("-updated_at")
+        search = self.request.query_params.get('name', None)
+        if search:
+            queryset =queryset.filter(name__icontains=search)
+        return queryset
 
 # 🔹 Create 1-to-1 Chat Auto
 class OneToOneChatAPIView(APIView):
