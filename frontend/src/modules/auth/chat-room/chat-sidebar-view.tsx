@@ -1,6 +1,6 @@
 "use client";
 
-import { TChatRoomListResponse } from "@/api-services/chat-rooms/chat-room-api-definations";
+import { TChatRoomListResponse, TChatRoomResponse } from "@/api-services/chat-rooms/chat-room-api-definations";
 import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-services";
 import { User } from "lucide-react";
 import { use, useEffect, useState } from "react";
@@ -9,9 +9,13 @@ import chatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-service
 import { useFetchChatRoomList } from "@/hooks/chat-room/useFetchChatRoomList";
 import { useDebounce } from "@/hooks/useDebounce";
 
+type ChatSidebarProps = {
+  selectedRoom: TChatRoomResponse | null;
+  onSelectRoom: (room: TChatRoomResponse) => void;
+};
 
 
-export const ChatSidebar = () => {
+export const ChatSidebar = ({selectedRoom,onSelectRoom}:ChatSidebarProps) => {
 
     const [ searchTerm, setSearchTerm] = useState<string>("");
 

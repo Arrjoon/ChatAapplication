@@ -1,9 +1,11 @@
 import { TChatRoomResponse, TCreateChatRoomPayload } from "@/api-services/chat-rooms/chat-room-api-definations";
 import ChatRoomApiServices from "@/api-services/chat-rooms/chat-room-api-services";
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { CHAT_ROOM_LIST_QUERY_KEY } from "./useFetchChatRoomList";
 
 
 export const useCreateGroupChat = () => {
+   const queryClient = useQueryClient();
     // Implementation for the hook to create a group chat\
     return useMutation<TChatRoomResponse,Error,TCreateChatRoomPayload>({
       mutationFn: async (req) => {
@@ -25,6 +27,10 @@ export const useCreateGroupChat = () => {
 
       return await ChatRoomApiServices.createChatRoom(formData);
       },
+      onSuccess: (data) => {
+        console.log("Group chat created successfully:", data);
+        queryClient.invalidateQueries({ queryKey: [CHAT_ROOM_LIST_QUERY_KEY] });
+      }
     });
 
 }
