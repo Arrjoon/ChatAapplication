@@ -8,16 +8,17 @@ export const useCreateGroupChat = () => {
     return useMutation<TChatRoomResponse,Error,TCreateChatRoomPayload>({
       mutationFn: async (req) => {
         const formData = new FormData();
-        formData.append("name", req.name ?? "");
+        formData.append("group_name", req.group_name ?? "");
 
         if (req.picture instanceof File) {
           formData.append("picture", req.picture);
         } else {
-          formData.append("picture", req.picture);
+          formData.append("picture", '');
         }
 
-        formData.append("participants", JSON.stringify(req.participants));
-
+        req.user_ids.forEach((id) => {
+          formData.append("user_ids", id);  // NOT JSON.stringify
+        }); 
         
       formData.append("is_group", req?.is_group ? "true" : "false");
         

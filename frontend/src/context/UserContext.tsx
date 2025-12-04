@@ -1,10 +1,10 @@
 "use client";
 import { userprofileresponse } from "@/api-services/user/user-api-definations";
-import { UserServices } from "@/api-services/user/user-api-services";
+import userApiServices from "@/api-services/user/user-api-services";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, createContext } from "react";
 
-const userServices = new UserServices();
+
 
 
 interface UserContextType {
@@ -19,7 +19,7 @@ const userContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const {data,isLoading,isError,refetch} =useQuery({
         queryKey:['user-profile'],
-        queryFn: () => userServices.fetchUserProfile(),
+        queryFn: () => userApiServices.fetchUserProfile(),
     });
 
     return (

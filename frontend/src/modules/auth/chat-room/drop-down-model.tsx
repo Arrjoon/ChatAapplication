@@ -17,12 +17,6 @@ const SidebarDropdown = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const users: UserType[] = [
-    { id: 1, name: "Arjun" },
-    { id: 2, name: "Sita" },
-    { id: 3, name: "Ram" },
-    { id: 4, name: "Shyam" },
-  ];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,7 +49,7 @@ const SidebarDropdown = () => {
               <button className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => setIsModalOpen(true)}><UserPlus className="w-5 h-5" /> New group</button>
                 
    
-            <ChatRoomModalView users={users} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ChatRoomModalView  isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
  
             <li className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer">
               <Star className="w-5 h-5" /> Starred messages

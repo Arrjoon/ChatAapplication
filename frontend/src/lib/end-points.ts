@@ -17,7 +17,7 @@ export const BASE_URL =
 
 
 export const FETCH_CHAT_ROOMS_LIST = "chat/";
-export const CREATE_GROUP_CHAT = "chat/api/rooms/";
+export const CREATE_GROUP_CHAT = "chat/group/create/";
 export const FETCH_CHAT_ROOM_DETAILS = (roomId: number) =>
   `chat/rooms/${roomId}/`;  
 
@@ -25,3 +25,4 @@ export const FETCH_CHAT_ROOM_DETAILS = (roomId: number) =>
 //user profile
 export const FETCH_USER_PROFILE = "auth/profile/";
 export const UPDATE_USER_PROFILE = "auth/profile/update/";
+export const FETCH_USERS = "chat/users/";

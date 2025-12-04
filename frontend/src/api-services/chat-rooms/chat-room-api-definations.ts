@@ -31,8 +31,8 @@ export type TChatRoomResponse = {
 export type TChatRoomListResponse = TChatRoomResponse[];
 
 export type TCreateChatRoomPayload = {
-    name: string;
-    participants: any[];
+    group_name: string;
+    user_ids: any[];
     is_group:boolean;
     picture: File | string | null;
 };

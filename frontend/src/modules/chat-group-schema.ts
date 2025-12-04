@@ -10,7 +10,6 @@ export const createGroupChatSchema = z.object({
     .union([z.instanceof(File), z.string()])
     .optional()
     .nullable(),
-  participants: z.array(z.string()),
 });
 
 export type CreateGroupChatFormData = z.infer<typeof createGroupChatSchema>;
