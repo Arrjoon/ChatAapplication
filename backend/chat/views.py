@@ -259,6 +259,8 @@ class MessageListAPIView(APIView):
             qs = qs.filter(id__lt=before_id)
 
         messages = qs[:limit]
+        
+        # room.messages.exclude(sender=request.user).filter(is_seen=False).update(is_seen=True)
 
         # Return in ascending order for UI
         messages = sorted(messages, key=lambda m: m.timestamp)

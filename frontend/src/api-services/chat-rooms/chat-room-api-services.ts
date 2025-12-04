@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/api-client";
-import { IChatRoomApiServices, TChatRoomListResponse, TChatRoomResponse, TCreateChatRoomPayload } from "./chat-room-api-definations";
+import { IChatRoomApiServices, TChatRoomListResponse, TChatRoomMessagesResponse, TChatRoomResponse, TCreateChatRoomPayload } from "./chat-room-api-definations";
 import { CREATE_GROUP_CHAT, FETCH_CHAT_ROOMS_LIST } from "@/lib/end-points";
 
 class ChatRoomApiServices implements IChatRoomApiServices {
@@ -24,6 +24,11 @@ class ChatRoomApiServices implements IChatRoomApiServices {
                 'Content-Type': 'multipart/form-data'
             }
         });
+        return response.data;
+    }
+    async fetchChatRoomMessages(roomId: number,params?: Record<string, any> ): Promise<TChatRoomMessagesResponse> {
+        // Implementation for fetching chat room messages
+        const response = await apiClient.get(`/${roomId}/messages/`,{ params });
         return response.data;
     }
 }
