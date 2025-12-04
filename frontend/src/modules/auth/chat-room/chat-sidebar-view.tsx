@@ -22,6 +22,7 @@ export const ChatSidebar = ({selectedRoom,onSelectRoom}:ChatSidebarProps) => {
     const [loading,setLoading]=useState<boolean>(false);
 
     const debouncedSearch = useDebounce(searchTerm, 300);
+    console.log("selectedRoom in sidebar:", selectedRoom);
 
     const { data:rooms=[], isLoading, isError} = useFetchChatRoomList(debouncedSearch);
 
@@ -92,7 +93,7 @@ export const ChatSidebar = ({selectedRoom,onSelectRoom}:ChatSidebarProps) => {
 
                 <div className="flex-col overflow-y-auto h-[calc(100vh-120px)]">
                     {rooms.map((room) => (
-                    <div key={room.id} className="flex items-center p-4 hover:bg-gray-50 cursor-pointer">
+                    <div key={room.id} className={`flex items-center p-4 hover:bg-gray-50 cursor-pointer ${selectedRoom?.id === room.id ? 'bg-gray-100' : ''}`} onClick={() => onSelectRoom(room) }>
                         <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
                         
                             {room.picture ? (
