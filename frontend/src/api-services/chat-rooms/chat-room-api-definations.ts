@@ -3,6 +3,7 @@ export interface IChatRoomApiServices {
     fetchChatRoomsList(name:string): Promise<TChatRoomListResponse>;
     fetchChatRoomDetails(roomId: number): Promise<any>;
     createChatRoom(req:FormData): Promise<TChatRoomResponse>;
+    fetchChatRoomMessages(roomId:number):Promise<TChatRoomMessagesResponse>;
 }
 
 
@@ -36,3 +37,14 @@ export type TCreateChatRoomPayload = {
     is_group:boolean;
     picture: File | string | null;
 };
+
+export type TChatRoomMessagesResponse = {
+    id: number;
+    content: string;
+    sender: {
+        id: number;
+        name: string;
+        avatar: string | null;
+    };
+    timestamp: string;
+}[];

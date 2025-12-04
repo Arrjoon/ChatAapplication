@@ -242,18 +242,28 @@ class LeaveGroupAPIView(generics.GenericAPIView):
         return Response(ChatRoomSerializer(room).data)
     
 
-
+# GET /api/chat/rooms/<id>/messages/?before=<msg_id>&limit=20
 class MessageListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, room_id):
         room = get_object_or_404(ChatRoom, id=room_id, participants=request.user)
 
-        # 🔹 Mark all messages from others as SEEN
-        # room.messages.filter(
-        #     sender__ne=request.user,   # exclude your own messages
-        #     is_seen=False
-        # ).update(is_seen=True)
+        limit = int(request.GET.get("limit", 20))
+        before_id = request.GET.get("before")
 
-        messages = room.messages.all()
-        return Response(MessageSerializer(messages, many=True).data)
+        qs = room.messages.order_by("-timestamp") 
+
+        # If loading older messages
+        if before_id:
+            qs = qs.filter(id__lt=before_id)
+
+        messages = qs[:limit]
+
+        # Return in ascending order for UI
+        messages = sorted(messages, key=lambda m: m.timestamp)
+
+        return Response({
+            "messages": MessageSerializer(messages, many=True).data,
+            "has_more": qs.count() > limit,
+        })
