@@ -33,11 +33,14 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         if last_msg:
             return MessageSerializer(last_msg).data
         return None
-
+class MessageSenderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "profile_picture"]
 
 class MessageSerializer(serializers.ModelSerializer):
 
-    sender = UserSerializer()
+    sender = MessageSenderSerializer(read_only=True)
 
     class Meta:
         model = Message

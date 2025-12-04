@@ -250,10 +250,10 @@ class MessageListAPIView(APIView):
         room = get_object_or_404(ChatRoom, id=room_id, participants=request.user)
 
         # 🔹 Mark all messages from others as SEEN
-        room.messages.filter(
-            sender__ne=request.user,   # exclude your own messages
-            is_seen=False
-        ).update(is_seen=True)
+        # room.messages.filter(
+        #     sender__ne=request.user,   # exclude your own messages
+        #     is_seen=False
+        # ).update(is_seen=True)
 
         messages = room.messages.all()
         return Response(MessageSerializer(messages, many=True).data)
