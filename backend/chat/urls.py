@@ -9,7 +9,10 @@ from .views import (
     ConvertToGroupAPIView,
     RemoveMemberAPIView,
     LeaveGroupAPIView,
+    chat_list,
+    chat_room
 )
+app_name = 'chat'
 
 urlpatterns = [
     path("users/", UserListAPIView.as_view(), name="user-list"),
@@ -22,4 +25,8 @@ urlpatterns = [
 
     path('remove-member/', RemoveMemberAPIView.as_view(), name='remove-member'),
     path('leave-group/', LeaveGroupAPIView.as_view(), name='leave-group'),
+
+        # Template views
+    path('room/<int:room_id>/', chat_room, name='chat_room'),
+    path('list/',chat_list, name='chat_list'),
 ]

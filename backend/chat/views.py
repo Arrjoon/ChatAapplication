@@ -269,3 +269,32 @@ class MessageListAPIView(APIView):
             "messages": MessageSerializer(messages, many=True).data,
             "has_more": qs.count() > limit,
         })
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+@login_required
+def chat_room(request, room_id):
+    """
+    Render chat room template
+    """
+    try:
+        room = ChatRoom.objects.get(id=room_id, participants=request.user)
+        return render(request, 'chat/room.html', {
+            'room': room,
+            'room_id': room_id
+        })
+    except ChatRoom.DoesNotExist:
+        return render(request, 'chat/error.html', {
+            'message': 'Room not found or you do not have access'
+        })
+
+
+@login_required
+def chat_list(request):
+    """
+    List all chat rooms for current user
+    """
+    rooms = ChatRoom.objects.filter(participants=request.user).order_by('-updated_at')
+    return render(request, 'chat/list.html', {
+        'rooms': rooms
+    })
