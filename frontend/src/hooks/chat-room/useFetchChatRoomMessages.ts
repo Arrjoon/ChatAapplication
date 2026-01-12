@@ -14,8 +14,9 @@ export const useFetchChatRoomMessages = (
     queryFn: () =>
       ChatRoomApiServices.fetchChatRoomMessages(roomId, { limit, before }),
     enabled: !!roomId,
-    staleTime: 0,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    // staleTime: 0,
+    // refetchInterval: 5000,
+    // refetchIntervalInBackground: true,
+    staleTime: Infinity,
   });
 };

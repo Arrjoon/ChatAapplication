@@ -2,12 +2,15 @@
 
 import { TChatRoomResponse } from "@/api-services/chat-rooms/chat-room-api-definations";
 import { User } from "lucide-react";
-
+import { MessageBubble } from "../../components/message-bubble";
 type selectedRoomprops = {
   selectedRoom: TChatRoomResponse | null;
 };
 
-export const ChatArea = ({selectedRoom}:selectedRoomprops) => {
+
+
+
+export const ChatArea = ({ selectedRoom }: selectedRoomprops) => {
   return (
     <div className="flex-1 bg-gray-50 flex flex-col">
       {/* Header */}
@@ -29,14 +32,12 @@ export const ChatArea = ({selectedRoom}:selectedRoomprops) => {
           </div>
         </div>
         <div className="flex items-start gap-2">
-          <User className="w-6 h-6 text-gray-600" />
-          <div className="bg-white p-3 rounded-lg shadow">
-            Another message in the chat area.
-          </div>
+
+          <MessageBubble message="Hello! This is a sample message." senderName="John Doe" isOwnMessage={false} timestamp='2026-01-12T16:08:48' />
         </div>
-    
+
       </div>
-   
+
 
       {/* Input Area */}
       <div className="h-16 bg-white border-t border-gray-300 flex items-center px-4">
@@ -51,7 +52,7 @@ export const ChatArea = ({selectedRoom}:selectedRoomprops) => {
       </div>
 
 
-     
+
     </div>
   );
 };

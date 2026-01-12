@@ -1,11 +1,15 @@
 import { getAccessToken } from "./auth-token";
 
-
 export class WSClient {
   private socket: WebSocket | null = null;
+  private onMessageCallback: ((data: any) => void) | null = null;
 
   constructor(private roomId: string) {
     this.connect();
+  }
+
+  onMessage(callback: (data: any) => void) {
+    this.onMessageCallback = callback;
   }
 
   private connect() {
@@ -15,7 +19,18 @@ export class WSClient {
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => console.log("WS connected");
-    this.socket.onclose = () => setTimeout(() => this.connect(), 1000);
+
+    this.socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (this.onMessageCallback) {
+        this.onMessageCallback(data);
+      }
+    };
+
+    this.socket.onclose = () => {
+      console.log("WS disconnected → reconnecting...");
+      setTimeout(() => this.connect(), 1000);
+    };
   }
 
   send(data: any) {
