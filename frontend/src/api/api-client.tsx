@@ -16,7 +16,7 @@ import {
   REFRESH_TOKEN,
 } from "@/lib/end-points";
 
-const LOGIN_URL = "/sign-in"; // Login page
+const LOGIN_URL = "/login"; // Login page
 const API_BASE_URL = BASE_URL; // Base URL for API server
 
 /*
@@ -42,7 +42,7 @@ export class ApiClient {
     this.axiosInstance = axios.create({
       baseURL: API_BASE_URL, // API URL
       headers: {
-        "Content-Type": "application/json",       // Sending JSON
+        "Content-Type": "application/json",       
         "X-Requested-With": "XMLHttpRequest",     // Mark request as AJAX
       },
       withCredentials: true, // Send cookies along with requests

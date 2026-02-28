@@ -1,9 +1,10 @@
 # accounts/serializers.py
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import Group, Permission
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from .models import User, UserSession,BlacklistedToken
+from .models import User, UserSession, BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -53,51 +54,13 @@ class LoginSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise ValidationError('Invalid credentials.')
 
-        if user.is_locked():
-            raise ValidationError('Account locked due to failed attempts. Try again later.')
-
         if not user.check_password(password):
-            user.increment_failed_login()
             raise ValidationError('Invalid credentials.')
 
         if not user.is_active or user.is_banned:
             raise ValidationError('Account disabled.')
 
         # success
-        user.reset_failed_login()
-        attrs['user'] = user
-        return attrs
-
-
-class EmailVerifySerializer(serializers.Serializer):
-    username = serializers.CharField()
-    token = serializers.CharField()
-
-    def validate(self, attrs):
-        username = attrs['username'].lower()
-        token = attrs['token']
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise ValidationError('User not found.')
-        ok = user.verify_email(token)
-        if not ok:
-            raise ValidationError('Invalid or expired token.')
-        attrs['user'] = user
-        return attrs
-
-
-class ResendEmailVerificationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-
-    def validate(self, attrs):
-        email = attrs['email'].lower()
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise ValidationError('No account with that email.')
-        if user.email_verified:
-            raise ValidationError('Email already verified.')
         attrs['user'] = user
         return attrs
 
@@ -146,7 +109,6 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise ValidationError('Current password incorrect.')
         return attrs
 
-
     def save(self, **kwargs):
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
@@ -155,10 +117,15 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    groups = serializers.StringRelatedField(many=True, read_only=True)
+    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'display_name','profile_picture','email_verified', 'date_joined', 'last_login']
-        read_only_fields = ['id', 'email_verified', 'date_joined', 'last_login']
+        fields = [
+            'id', 'username', 'email', 'display_name', 'profile_picture',
+            'groups', 'date_joined', 'last_login'
+        ]
+        read_only_fields = ['id', 'date_joined', 'last_login', 'groups']
 
 
 class SessionSerializer(serializers.ModelSerializer):
@@ -189,28 +156,23 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
             user = User.objects.filter(username__iexact=identifier).first()
 
         if not user:
-            # Optional: you can silently fail to avoid revealing valid usernames/emails
             raise serializers.ValidationError({"message": "Invalid credentials."})
-        if user.is_locked():
-            raise serializers.ValidationError("Account temporarily locked.")
 
         if not user.check_password(password):
-            # Increment failed login counter
-            user.increment_failed_login()
-            remaining = max(0, 5 - user.failed_login_count)  # optional feedback
-            raise serializers.ValidationError(f"Invalid credentials. {remaining} attempts left before lockout.")
+            raise serializers.ValidationError("Invalid credentials.")
+        
         if not user.is_active:
             raise serializers.ValidationError("Account disabled.")
-        if not user.email_verified:
-            raise serializers.ValidationError("Email not verified.")
         
+        if user.is_banned:
+            raise serializers.ValidationError("Account is banned.")
 
         # Generate JWT
         refresh = RefreshToken.for_user(user)
         return {
             "refresh": str(refresh),
             "access": str(refresh.access_token),
-            "user_id": str(user.id),
+            "user_id": user.id,
         }
 
 from rest_framework_simplejwt.exceptions import TokenError
@@ -235,3 +197,204 @@ class RefreshTokenSerializer(serializers.Serializer):
             "access": str(token.access_token),
             "refresh": str(token)
         }
+
+
+# ========== GROUP SERIALIZERS ==========
+
+class PermissionSerializer(serializers.ModelSerializer):
+    """Serializer for Permission model"""
+    class Meta:
+        model = Permission
+        fields = ['id', 'name', 'codename', 'content_type']
+        read_only_fields = ['id']
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    """Serializer for Group model"""
+    permissions = PermissionSerializer(many=True, read_only=True)
+    permission_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Permission.objects.all(),
+        source='permissions',
+        write_only=True,
+        required=False
+    )
+    user_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'permissions', 'permission_ids', 'user_count']
+    
+    def get_user_count(self, obj):
+        return obj.user_set.count()
+
+
+class GroupListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for group list"""
+    permission_count = serializers.SerializerMethodField()
+    user_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'permission_count', 'user_count']
+    
+    def get_permission_count(self, obj):
+        return obj.permissions.count()
+    
+    def get_user_count(self, obj):
+        return obj.user_set.count()
+
+
+# ========== USER SERIALIZERS ==========
+
+class UserListSerializer(serializers.ModelSerializer):
+    """Serializer for listing users"""
+    groups = serializers.StringRelatedField(many=True, read_only=True)
+    group_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Group.objects.all(),
+        source='groups',
+        write_only=True,
+        required=False
+    )
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'display_name', 'profile_picture',
+            'groups', 'group_ids', 'is_active', 'is_banned',
+            'date_joined', 'last_login'
+        ]
+        read_only_fields = ['id', 'date_joined', 'last_login']
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating users"""
+    password = serializers.CharField(write_only=True, min_length=6, required=True)
+    group_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Group.objects.all(),
+        source='groups',
+        write_only=True,
+        required=False
+    )
+    
+    class Meta:
+        model = User
+        fields = [
+            'username', 'email', 'password', 'display_name', 'profile_picture',
+            'group_ids', 'is_active', 'is_banned'
+        ]
+    
+    def validate_username(self, value):
+        value = value.lower()
+        if User.objects.filter(username=value).exists():
+            raise ValidationError('Username already taken.')
+        return value
+    
+    def validate_email(self, value):
+        value = value.lower()
+        if User.objects.filter(email=value).exists():
+            raise ValidationError('Email already in use.')
+        return value
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        groups = validated_data.pop('groups', [])
+        user = User.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.save()
+        
+        # Assign groups
+        if groups:
+            user.groups.set(groups)
+        
+        return user
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating users"""
+    password = serializers.CharField(write_only=True, min_length=6, required=False, allow_null=True)
+    group_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Group.objects.all(),
+        source='groups',
+        write_only=True,
+        required=False
+    )
+    
+    class Meta:
+        model = User
+        fields = [
+            'username', 'email', 'password', 'display_name', 'profile_picture',
+            'group_ids', 'is_active', 'is_banned'
+        ]
+    
+    def validate_username(self, value):
+        value = value.lower()
+        # Allow same username for current user
+        if self.instance and self.instance.username == value:
+            return value
+        if User.objects.filter(username=value).exists():
+            raise ValidationError('Username already taken.')
+        return value
+    
+    def validate_email(self, value):
+        value = value.lower()
+        # Allow same email for current user
+        if self.instance and self.instance.email == value:
+            return value
+        if User.objects.filter(email=value).exists():
+            raise ValidationError('Email already in use.')
+        return value
+    
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        groups = validated_data.pop('groups', None)
+        
+        # Update fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        # Update password if provided
+        if password:
+            instance.set_password(password)
+        
+        instance.save()
+        
+        # Update groups if provided
+        if groups is not None:
+            instance.groups.set(groups)
+        
+        return instance
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    """Serializer for user detail view"""
+    groups = GroupListSerializer(many=True, read_only=True)
+    group_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Group.objects.all(),
+        source='groups',
+        write_only=True,
+        required=False
+    )
+    permissions = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'display_name', 'profile_picture',
+            'groups', 'group_ids', 'permissions', 'is_active', 'is_banned', 
+            'is_staff', 'is_superuser',
+            'date_joined', 'last_login'
+        ]
+        read_only_fields = [
+            'id', 'date_joined', 'last_login',
+            'is_staff', 'is_superuser'
+        ]
+    
+    def get_permissions(self, obj):
+        """Get all permissions for the user (from groups and direct)"""
+        permissions = obj.user_permissions.all() | Permission.objects.filter(group__user=obj)
+        return [{'id': p.id, 'name': p.name, 'codename': p.codename} for p in permissions.distinct()]

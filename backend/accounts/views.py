@@ -4,7 +4,13 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.contrib.auth.models import Group, Permission
+from django.db import transaction, models
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 
 from .models import UserSession, BlacklistedToken
 from .serializers import (
@@ -13,25 +19,32 @@ from .serializers import (
     RefreshTokenSerializer,
     ProfileSerializer,
     SessionSerializer,
-    EmailVerifySerializer,
-    ResendEmailVerificationSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
     ChangePasswordSerializer,
-    ProfileSerializer,
-    SessionSerializer
+    # Group serializers
+    GroupSerializer,
+    GroupListSerializer,
+    PermissionSerializer,
+    # User serializers
+    UserListSerializer,
+    UserCreateSerializer,
+    UserUpdateSerializer,
+    UserDetailSerializer,
 )
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
-from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, UserSession, BlacklistedToken
+from .permissions import (
+    IsSuperUser,
+    IsStaffOrSuperUser,
+    CanManageUsers,
+    CanManageGroups,
+    CanViewUsers,
+    CanEditOwnProfile,
+)
 
 User = get_user_model()
 
-# views.py
+# ========== AUTHENTICATION VIEWS ==========
+
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
@@ -87,10 +100,6 @@ class LoginView(TokenObtainPairView):
         
         return response
 
-    def _get_location_from_ip(self, ip_address):
-        return None
-
-
 
 class UsernameCheckView(APIView):
     def get(self, request, *args, **kwargs):
@@ -100,13 +109,9 @@ class UsernameCheckView(APIView):
         return Response({"message": "user with this username  not found"})
 
 
-
 class RegisterView(generics.CreateAPIView):
     """
-    User registration endpoint that:
-    1. Creates new user account
-    2. Sends email verification
-    3. Returns success message 
+    User registration endpoint
     """
     serializer_class = RegisterSerializer
     permission_classes = [] 
@@ -118,17 +123,15 @@ class RegisterView(generics.CreateAPIView):
         
         user = serializer.save()
         
-        # Send verification email
-        send_email_verification(request, user)
-        
         return Response({
-            'detail': 'Registration successful. Please check your email to verify your account.',
+            'detail': 'Registration successful.',
             'user': {
+                'id': user.id,
                 'email': user.email,
                 'username': user.username,
-                'email_verified': False
             }
         }, status=status.HTTP_201_CREATED)
+
 
 class RefreshTokenView(TokenRefreshView):
     """
@@ -226,7 +229,6 @@ class LogoutAllView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         # Get all unexpired refresh tokens for user
         from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
-        from django.utils import timezone
         
         tokens = OutstandingToken.objects.filter(
             user=request.user,
@@ -249,89 +251,10 @@ class LogoutAllView(generics.GenericAPIView):
         )
 
 
-class ActiveSessionsView(generics.ListAPIView):
-    """
-    List all active sessions for the current user
-    """
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = SessionSerializer
-
-    def get_queryset(self):
-        return UserSession.objects.filter(
-            user=self.request.user,
-            is_active=True
-        ).order_by('-last_seen_at')
-
-
-class RevokeSessionView(generics.DestroyAPIView):
-    """
-    Revoke a specific session by ID
-    """
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = SessionSerializer
-    queryset = UserSession.objects.all()
-    lookup_field = 'id'
-
-    def perform_destroy(self, instance):
-        # Don't actually delete, just mark as inactive
-        instance.is_active = False
-        instance.save()
-        
-        # Optionally blacklist associated token if available
-        if instance.meta and 'token_id' in instance.meta:
-            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
-            try:
-                token = OutstandingToken.objects.get(id=instance.meta['token_id'])
-                BlacklistedToken.objects.get_or_create(token=token.token)
-            except OutstandingToken.DoesNotExist:
-                pass
-
-
-
-from .utils import send_email_verification, send_password_reset
-
-class EmailVerifyView(APIView):
-    """
-    Verify user's email with token
-    """
-    permission_classes = [permissions.AllowAny]
-    serializer_class = EmailVerifySerializer
-
-    def post(self, request):
-        serializer = EmailVerifySerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        
-        # Generate new JWT tokens after verification
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'detail': 'Email successfully verified.',
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
-        })
-
-
-class ResendEmailVerificationView(APIView):
-    """
-    Resend email verification link
-    """
-    permission_classes = [permissions.AllowAny]
-    serializer_class = ResendEmailVerificationSerializer
-
-    def post(self, request):
-        serializer = ResendEmailVerificationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        
-        send_email_verification(request, user)
-        return Response({'detail': 'Verification email resent.'})
-
-
 class PasswordResetRequestView(APIView):
     """
     Initiate password reset process
+    Note: Password reset functionality can be implemented later if needed
     """
     permission_classes = [permissions.AllowAny]
     serializer_class = PasswordResetRequestSerializer
@@ -341,8 +264,10 @@ class PasswordResetRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         
+        # TODO: Implement password reset email sending
         if user:
-            send_password_reset(request, user)
+            # send_password_reset(request, user)
+            pass
         
         return Response({
             'detail': 'If an account exists with this email, a password reset link has been sent.'
@@ -409,16 +334,6 @@ class ProfileRetrieveUpdateView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
     def perform_update(self, serializer):
-        # Handle email change verification
-        user = self.request.user
-        new_email = serializer.validated_data.get('email')
-        
-        if new_email and new_email.lower() != user.email.lower():
-            user.email = new_email.lower()
-            user.email_verified = False
-            user.save()
-            send_email_verification(self.request, user)
-        
         serializer.save()
 
 
@@ -444,6 +359,7 @@ class SessionRevokeView(generics.DestroyAPIView):
     serializer_class = SessionSerializer
     queryset = UserSession.objects.all()
     lookup_field = 'id'
+    lookup_url_kwarg = 'session_id'
 
     def get_queryset(self):
         return super().get_queryset().filter(user=self.request.user)
@@ -459,3 +375,236 @@ class SessionRevokeView(generics.DestroyAPIView):
             if refresh_token:
                 BlacklistedToken.objects.create(token=refresh_token)
 
+
+# ========== GROUP MANAGEMENT VIEWS ==========
+
+class PermissionListView(generics.ListAPIView):
+    """
+    List all available permissions
+    Only superuser can view all permissions
+    """
+    permission_classes = [IsSuperUser]
+    serializer_class = PermissionSerializer
+    queryset = Permission.objects.all().order_by('content_type__app_label', 'codename')
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Filter by app if provided
+        app_label = self.request.query_params.get('app', None)
+        if app_label:
+            queryset = queryset.filter(content_type__app_label=app_label)
+        return queryset
+
+
+class GroupListView(generics.ListCreateAPIView):
+    """
+    List all groups or create a new group
+    """
+    permission_classes = [CanManageGroups]
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return GroupListSerializer
+        return GroupSerializer
+    
+    def get_queryset(self):
+        return Group.objects.all().prefetch_related('permissions', 'user_set').order_by('name')
+
+
+class GroupDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update, or delete a group
+    """
+    permission_classes = [CanManageGroups]
+    serializer_class = GroupSerializer
+    queryset = Group.objects.all().prefetch_related('permissions', 'user_set')
+    lookup_field = 'id'
+    
+    def perform_destroy(self, instance):
+        # Don't allow deletion of groups that have users
+        if instance.user_set.exists():
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('Cannot delete group with assigned users. Remove users first.')
+        instance.delete()
+
+
+class GroupPermissionsUpdateView(APIView):
+    """
+    Update permissions for a group
+    POST: Add permissions
+    DELETE: Remove permissions
+    """
+    permission_classes = [CanManageGroups]
+    
+    def post(self, request, group_id):
+        """Add permissions to group"""
+        group = get_object_or_404(Group, id=group_id)
+        permission_ids = request.data.get('permission_ids', [])
+        
+        if not permission_ids:
+            return Response(
+                {'detail': 'permission_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        permissions = Permission.objects.filter(id__in=permission_ids)
+        group.permissions.add(*permissions)
+        
+        return Response({
+            'detail': 'Permissions added successfully',
+            'group': GroupSerializer(group).data
+        })
+    
+    def delete(self, request, group_id):
+        """Remove permissions from group"""
+        group = get_object_or_404(Group, id=group_id)
+        permission_ids = request.data.get('permission_ids', [])
+        
+        if not permission_ids:
+            return Response(
+                {'detail': 'permission_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        permissions = Permission.objects.filter(id__in=permission_ids)
+        group.permissions.remove(*permissions)
+        
+        return Response({
+            'detail': 'Permissions removed successfully',
+            'group': GroupSerializer(group).data
+        })
+
+
+# ========== USER MANAGEMENT VIEWS ==========
+
+class UserListView(generics.ListCreateAPIView):
+    """
+    List all users or create a new user
+    """
+    permission_classes = [CanViewUsers]
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return UserListSerializer
+        return UserCreateSerializer
+    
+    def get_queryset(self):
+        queryset = User.objects.all().prefetch_related('groups').order_by('-date_joined')
+        
+        # Filter by group if provided
+        group_id = self.request.query_params.get('group', None)
+        if group_id:
+            queryset = queryset.filter(groups__id=group_id)
+        
+        # Filter by search query
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(username__icontains=search) |
+                Q(email__icontains=search) |
+                Q(display_name__icontains=search)
+            )
+        
+        return queryset.distinct()
+    
+    def get_permissions(self):
+        """
+        Allow viewing for CanViewUsers, but require CanManageUsers for creation
+        """
+        if self.request.method == 'GET':
+            return [CanViewUsers()]
+        return [CanManageUsers()]
+
+
+class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update, or delete a user
+    """
+    permission_classes = [CanEditOwnProfile]
+    serializer_class = UserDetailSerializer
+    queryset = User.objects.all().prefetch_related('groups', 'user_permissions')
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+    
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return UserUpdateSerializer
+        return UserDetailSerializer
+    
+    def get_permissions(self):
+        """
+        Different permissions for different actions
+        """
+        if self.request.method == 'GET':
+            return [CanViewUsers()]
+        elif self.request.method == 'DELETE':
+            return [CanManageUsers()]
+        return [CanEditOwnProfile()]
+    
+    def perform_destroy(self, instance):
+        # Don't allow deletion of superuser
+        if instance.is_superuser:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('Cannot delete superuser account.')
+        instance.delete()
+
+
+class UserGroupsUpdateView(APIView):
+    """
+    Update groups for a user
+    POST: Add user to groups
+    DELETE: Remove user from groups
+    PUT: Replace all groups
+    """
+    permission_classes = [CanManageUsers]
+    
+    def post(self, request, user_id):
+        """Add user to groups"""
+        user = get_object_or_404(User, id=user_id)
+        group_ids = request.data.get('group_ids', [])
+        
+        if not group_ids:
+            return Response(
+                {'detail': 'group_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        groups = Group.objects.filter(id__in=group_ids)
+        user.groups.add(*groups)
+        
+        return Response({
+            'detail': 'User added to groups successfully',
+            'user': UserDetailSerializer(user).data
+        })
+    
+    def delete(self, request, user_id):
+        """Remove user from groups"""
+        user = get_object_or_404(User, id=user_id)
+        group_ids = request.data.get('group_ids', [])
+        
+        if not group_ids:
+            return Response(
+                {'detail': 'group_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        groups = Group.objects.filter(id__in=group_ids)
+        user.groups.remove(*groups)
+        
+        return Response({
+            'detail': 'User removed from groups successfully',
+            'user': UserDetailSerializer(user).data
+        })
+    
+    def put(self, request, user_id):
+        """Replace all groups for user"""
+        user = get_object_or_404(User, id=user_id)
+        group_ids = request.data.get('group_ids', [])
+        
+        groups = Group.objects.filter(id__in=group_ids) if group_ids else []
+        user.groups.set(groups)
+        
+        return Response({
+            'detail': 'User groups updated successfully',
+            'user': UserDetailSerializer(user).data
+        })
